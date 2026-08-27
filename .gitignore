@@ -18,3 +18,4 @@ venv/
 *.joblib
 *.pt
 *.ckpt
+results/
