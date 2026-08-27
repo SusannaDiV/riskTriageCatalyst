@@ -1,0 +1,8 @@
+{
+  "ok": true,
+  "n_matched": 43,
+  "ipw_mae_matched": 0.04439738905394584,
+  "naive_mae_matched": 0.045348309057829224,
+  "mean_weight_matched": 1.0,
+  "note": "Matched XRD is a coarse proxy for OCx24 electrochemical prioritization, not a known logging policy."
+}

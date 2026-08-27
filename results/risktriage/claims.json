@@ -1,0 +1,92 @@
+{
+  "claim1_loco_r2": {
+    "linear": 0.5181232455079932,
+    "ridge": 0.5615436779544076,
+    "rf": 0.601644764298509,
+    "lgbm": 0.6054640088423082
+  },
+  "claim2_decision": {
+    "crc": {
+      "p_test": 0.07377827215424546,
+      "triage_risk": 0.11373227196885427,
+      "wrong_nontest": 0.11373227196885427
+    },
+    "point": {
+      "p_test": 0.0,
+      "triage_risk": 0.1401950083426029,
+      "wrong_nontest": 0.1401950083426029
+    },
+    "rac": {
+      "p_test": 0.07377827215424546,
+      "triage_risk": 0.11373227196885427,
+      "wrong_nontest": 0.11373227196885427
+    },
+    "split_cp": {
+      "p_test": 0.7504296440489433,
+      "triage_risk": 0.0032258064516129032,
+      "wrong_nontest": 0.0032258064516129032
+    },
+    "uncalibrated": {
+      "p_test": 0.019799429922135705,
+      "triage_risk": 0.12529511957730813,
+      "wrong_nontest": 0.12529511957730813
+    }
+  },
+  "claim3_audc": {
+    "conformal_width": 0.5409722222222222,
+    "ei": 0.9174999999999999,
+    "ml_rank": 0.9269444444444443,
+    "random": 0.5463888888888888,
+    "risktriage": 0.9290277777777778,
+    "sabatier": 0.2659722222222222,
+    "ucb": 0.924861111111111,
+    "variance": 0.5409722222222222,
+    "voi": 0.7966666666666666
+  },
+  "claim4_staged": {
+    "direct": {
+      "p_test": 0.07377827215424546,
+      "triage_risk": 0.11373227196885427
+    },
+    "staged_filter_unmatched": {
+      "p_test": 0.011397849462365592,
+      "triage_risk": 0.14639089729328886
+    },
+    "staged_xrd_update": {
+      "p_test": 0.05053763440860215,
+      "triage_risk": 0.1252081015943641
+    }
+  },
+  "ood_p_test": [
+    {
+      "method": "crc",
+      "split": "iid",
+      "p_test": 0.07377827215424546
+    },
+    {
+      "method": "crc",
+      "split": "ood",
+      "p_test": 0.21214769017917684
+    },
+    {
+      "method": "rac",
+      "split": "iid",
+      "p_test": 0.07377827215424546
+    },
+    {
+      "method": "rac",
+      "split": "ood",
+      "p_test": 0.21214769017917684
+    },
+    {
+      "method": "split_cp",
+      "split": "iid",
+      "p_test": 0.7504296440489433
+    },
+    {
+      "method": "split_cp",
+      "split": "ood",
+      "p_test": 0.8108315833486435
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "risktriage"
+version = "0.1.0"
+description = "RiskTriage: calibrating when physical validation is needed in computational catalyst discovery (OCx24 HER)."
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+  "lightgbm>=4.0.0",
+  "numpy>=1.24",
+  "pandas>=2.0",
+  "scikit-learn>=1.3",
+  "scipy>=1.11",
+  "matplotlib>=3.8",
+  "requests>=2.31",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.4"]
+
+[project.scripts]
+risktriage = "risktriage.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["risktriage*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
