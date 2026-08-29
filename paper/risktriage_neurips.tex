@@ -136,8 +136,9 @@ $T(r)$ is read off the realized (test rate, risk) frontier of each method; it is
 (Appendix~\ref{app:frontiers}).
 At target $r^\star=0.10$, CRC tests $14.3\%$ with realized risk $0.093$; Table~\ref{tab:main}b reports the tighter matched-risk reading $T(0.10)=8.4\%$.
 
-Baselines: point prediction, uncertainty sampling by ensemble standard deviation, split conformal prediction, and probability thresholds.
+Baselines: point prediction; Chow/selective prediction (TEST iff $t<\hat p<1-t$); value-of-information ranking; uncertainty sampling by ensemble standard deviation; and split conformal prediction.
 Split conformal tests a candidate whenever its interval straddles $y^\star$.
+Chow and VOI are compared as matched-risk envelopes in Appendix~\ref{app:when}; they do not target a risk budget $r$.
 Split construction, \(\hat p\), and conformal scores are specified in Appendix~\ref{app:details}.
 
 \begin{theorem}[Safe threshold action]
@@ -213,7 +214,8 @@ Screening is informative and still imperfect, so triage is relevant.
 
 Figure~\ref{fig:risktriage} and Table~\ref{tab:main}b report the primary endpoint $T(r)$.
 At $\risk\le 0.10$, RAC/CRC tests $8.4\%$ [4.2, 13.4] of candidates, RiskTriage-Bayes $8.9\%$ [4.3, 14.3], uncertainty sampling $16.5\%$ [9.2, 24.4], and split conformal $25.9\%$ [22.3, 29.6].
-The RAC/CRC and uncertainty intervals overlap at this $r$; the comparison is cleaner at $r=0.05$ ($25.2$ [18.3, 32.6] vs.\ $47.0$ [35.3, 58.0]).
+The RAC/CRC and uncertainty intervals overlap at this $r$; a paired test on the 20 split-level $T(0.10)$ values still favors CRC (mean $\Delta=+8.0$ percentage points vs.\ uncertainty, Wilcoxon $p=0.002$; vs.\ split CP $+17.5$ pp, $p=3{\times}10^{-4}$; vs.\ VOI ranking $+1.8$ pp, $p=0.047$; Appendix~\ref{app:when}).
+The comparison is also cleaner at $r=0.05$ ($25.2$ [18.3, 32.6] vs.\ $47.0$ [35.3, 58.0]).
 Point prediction tests $0\%$ and incurs risk $0.140$ (Appendix~\ref{app:frontiers}a).
 The reverse frontier agrees: at a 10\% testing budget, RAC/CRC risk is $0.096$ [0.074, 0.122] versus $0.113$ [0.086, 0.142] for uncertainty sampling; at 30\% testing the risks are $0.043$ and $0.078$ (Appendix~\ref{app:frontiers}c).
 Split conformal reaches a testing fraction below 10\% on only 2 of 20 seeds, so that reverse cell is omitted.
@@ -240,11 +242,16 @@ The gain is calibrated abstention, not discovery.
 Intermediate XRF/XRD, used to update $p(x)$, lowers later electrochemical testing from $7.4\%$ to $5.1\%$ (risk $0.114\to 0.125$).
 Hard-dropping unmatched samples cuts testing to $1.1\%$ but raises risk to $0.146$ and discards $2.1\%$ good catalysts (Appendix~\ref{app:robustness}c).
 
+\textbf{When the method helps.}
+Appendix~\ref{app:when} varies the success quantile $q\in\{0.5,\ldots,0.9\}$, degrades or sharpens the same HER predictor, and repeats $T(r)$ on OCx24 CO$_2$RR and Kim calorimetry matched to MP/OQMD DFT~\citep{kim2017enthalpy}.
+CRC reduces testing versus uncertainty and split CP across those $q$; the gap is largest when the predictor is weak and, when DFT already tracks experiment, appears at tight $r$ rather than at $r=0.10$.
+
 \textbf{Limitations.}
-$n=179$; CIs on $T(0.10)$ are wide and overlap the uncertainty-sampling interval.
+$n=179$ on HER; CIs on $T(0.10)$ are wide and overlap the uncertainty-sampling interval, though the paired split-level test does not.
 The study is retrospective, not a closed-loop laboratory deployment.
-The top-quartile threshold is an evaluation device, not an application-specific spec.
+The top-quartile threshold is an evaluation device; Appendix~\ref{app:when} repeats the envelope at other quantiles.
 OCx24 does not expose a logging policy over the ${\sim}20$k computational candidates; conclusions concern the observed experimental population (Appendix~\ref{app:ipw}).
+CO$_2$RR is the same campaign as HER, not an independent electrochemistry dataset.
 
 \section{Conclusion}
 
@@ -460,5 +467,59 @@ Probabilities are clipped to $[0.05,0.95]$; unmatched rows receive weight $0$.
 Matched rows receive $w(x)=1/\hat\pi(x)$, then renormalized to mean $1$ on the matched subset (no further stabilization).
 A ridge regressor is fit on the 43 matched samples with these weights; MAE $0.044$ (vs.\ $0.045$ unweighted) is computed on that same matched subset, so it is an in-sample sensitivity check, not a held-out IPW estimate.
 XRD match is not the historical logging policy, so this does not identify off-policy performance.
+
+\section{When RiskTriage Helps}
+\label{app:when}
+
+Chow selective classification~\citep{chow1970reject,geifman2017selective} abstains when $\hat p$ is near $1/2$.
+VOI ranks candidates by the value of a perfect experiment.
+Neither minimizes $P(\test)$ subject to $\risk\le r$.
+On HER, Chow is infeasible for $R\le 0.10$ on 8 of 20 splits at $q=0.75$, so we do not report a matched-risk $T$ for it.
+Paired $\Delta$ below is $T_{\mathrm{competitor}}-T_{\mathrm{CRC}}$ at $r=0.10$ unless noted (20 grouped splits; Wilcoxon two-sided).
+
+\textbf{Success threshold.}
+$y^\star$ is the training quantile $q$.
+At $q=0.75$, CRC $T(0.10)=8.4\%$ [4.2, 13.4] versus uncertainty $16.5\%$ ($\Delta=+8.0$ pp $[3.4,13.6]$, $p=0.002$), split CP $25.9\%$ ($\Delta=+17.5$ pp, $p=3{\times}10^{-4}$), and VOI $10.2\%$ ($\Delta=+1.8$ pp, $p=0.047$).
+The CRC advantage versus split CP holds for $q\in\{0.50,0.60,0.70,0.75,0.80,0.90\}$ (all $p<0.002$).
+Versus uncertainty it is significant at $q=0.50,0.75,0.80,0.90$ and not at $q=0.60$ ($p=0.18$).
+
+\begin{table}[h]
+\centering
+\caption{\textbf{HER $T(0.10)$ (\%) vs.\ training success quantile $q$.}
+Brackets: bootstrap 95\% CIs over 20 splits.}
+\label{tab:app_quantile}
+\scriptsize
+\begin{tabular}{lcccc}
+\toprule
+$q$ & RAC/CRC & Uncertainty & VOI & Split CP\\
+\midrule
+0.50 & 20.5 [12.9, 28.4] & 26.4 [16.5, 36.3] & 27.1 [15.5, 40.4] & 37.1 [33.4, 40.5]\\
+0.60 & 16.5 [10.0, 23.3] & 19.7 [11.6, 28.6] & 21.0 [11.7, 31.7] & 30.6 [25.4, 35.4]\\
+0.70 & 15.6 [8.9, 22.9] & 23.9 [13.9, 34.8] & 20.4 [11.0, 31.3] & 29.9 [24.9, 34.7]\\
+0.75 & 8.4 [4.2, 13.4] & 16.5 [9.2, 24.4] & 10.2 [5.1, 16.4] & 25.9 [22.3, 29.6]\\
+0.80 & 9.7 [5.3, 14.6] & 17.3 [9.5, 25.3] & 10.7 [5.4, 16.6] & 23.7 [19.7, 27.5]\\
+0.90 & 9.2 [4.3, 15.1] & 21.2 [10.6, 33.3] & 10.7 [5.1, 17.3] & 19.2 [14.3, 24.2]\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Predictor strength (same HER features).}
+Weak: shrink $\hat y$ toward the mean and inflate scale.
+Strong: amplify the fitted signal and shrink scale (no test-label leakage).
+Moderate is the paper LightGBM.
+Weak: CRC $28.2\%$ [22.7, 33.5] versus uncertainty $51.6\%$ ($\Delta=+23.4$ pp, $p=2{\times}10^{-4}$) and split CP $48.2\%$ ($p=1{\times}10^{-4}$).
+Moderate: as in Table~\ref{tab:main}b.
+Strong (HER): CRC $10.7\%$ versus uncertainty $16.7\%$ ($p=0.023$).
+
+\textbf{Independent and same-platform tasks.}
+OCx24 CO$_2$RR uses $Y=100-\mathrm{FE}(\mathrm{H}_2)$ on the same 179 compositions (LightGBM LOCO $R^2=0.21$).
+$T(0.10)$ is $27.3\%$ [21.3, 34.1] for CRC versus $40.6\%$ uncertainty ($\Delta=+13.4$ pp $[3.9,23.1]$, $p=0.020$) and $33.8\%$ split CP ($p=0.005$).
+Kim experimental formation enthalpies with at least one MP/OQMD DFT energy~\citep{kim2017enthalpy} give $N=789$, $R^2=0.90$.
+At $r=0.10$, CRC already needs $0.07\%$ tests; split CP still tests $9.4\%$ ($p=9{\times}10^{-5}$).
+The uncertainty gap appears at $r=0.03$: CRC $12.2\%$ versus $42.8\%$ ($\Delta=+30.7$ pp, $p=8{\times}10^{-6}$).
+
+\textbf{OOD and cost.}
+At default $r^\star=0.15$, CO$_2$RR CRC testing rises from $15.8\%$ IID to $26.3\%$ OOD; enthalpy CRC remains at $0$ tests while risk moves $0.065\to 0.078$.
+Bayes testing falls with $c_E$ and is $0$ for $c_E\ge 1/2$ on HER, CO$_2$RR, and enthalpy; interval RAC on CO$_2$RR stays near $16\%$ for all $c_E<1$.
 
 \end{document}

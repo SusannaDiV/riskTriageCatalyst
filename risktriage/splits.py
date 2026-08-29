@@ -65,7 +65,7 @@ def ood_cluster_split(
     cents = []
     for g in uniq:
         mask = groups == g
-        cents.append(np.nanmean(X[mask], axis=0))
+        cents.append(np.nanmean(np.nan_to_num(X[mask], nan=0.0), axis=0))
     cents = np.nan_to_num(np.vstack(cents), nan=0.0)
     k = min(n_clusters, len(uniq))
     km = KMeans(n_clusters=k, n_init=10, random_state=seed)

@@ -48,6 +48,22 @@ def min_risk_at_test_budget(p_test: np.ndarray, risk: np.ndarray, t: float) -> f
     return float(np.min(risk[ok]))
 
 
+def wilcoxon_paired(a: np.ndarray, b: np.ndarray) -> dict:
+    """Two-sided Wilcoxon signed-rank on paired differences a-b (NaNs dropped)."""
+    from scipy.stats import wilcoxon
+
+    a = np.asarray(a, dtype=float)
+    b = np.asarray(b, dtype=float)
+    mask = np.isfinite(a) & np.isfinite(b)
+    d = a[mask] - b[mask]
+    d = d[np.abs(d) > 1e-15]
+    n = int(len(d))
+    if n < 6:
+        return {"n": n, "stat": float("nan"), "pvalue": float("nan")}
+    res = wilcoxon(d, zero_method="wilcox", alternative="two-sided")
+    return {"n": n, "stat": float(res.statistic), "pvalue": float(res.pvalue)}
+
+
 def bootstrap_mean_ci(x: np.ndarray, n_boot: int = 2000, seed: int = 0) -> dict:
     rng = np.random.default_rng(seed)
     x = np.asarray(x, dtype=float)

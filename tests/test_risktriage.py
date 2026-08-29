@@ -103,7 +103,60 @@ def test_min_test_at_risk_and_reverse():
     assert min_risk_at_test_budget(p_test, risk, 0.10) == pytest.approx(0.11)
 
 
-def test_load_her_if_present():
+def test_parse_formula_stoichiometry():
+    from risktriage.features import parse_composition, parse_formula
+
+    f = parse_formula("Fe2O3")
+    assert abs(f["Fe"] - 2 / 5) < 1e-8
+    assert abs(f["O"] - 3 / 5) < 1e-8
+    assert abs(sum(parse_composition("NaCl").values()) - 1.0) < 1e-8
+
+
+def test_energy_from_pairs():
+    from risktriage.data import _energy_from_pairs
+
+    assert _energy_from_pairs([[-0.5, "eV/atom"], [-48, "kJ/mol of atom"]]) == pytest.approx(-0.5)
+    assert np.isnan(_energy_from_pairs(None))
+
+
+def test_load_co2r_if_present():
+    from risktriage.data import DATA_DIR, load_co2r_task
+
+    path = DATA_DIR / "processed_data" / "CO2R_40_70_all.csv"
+    if not path.exists():
+        pytest.skip("OCx24 CO2R not downloaded")
+    task = load_co2r_task()
+    assert task.n >= 50
+    assert task.meta["task"] == "ocx24_co2r"
+    assert np.isfinite(task.y).all()
+    assert task.y_name == "fe_co2rr"
+
+
+def test_load_enthalpy_if_present():
+    from pathlib import Path
+    from risktriage.data import ENTHALPY_DIR, load_enthalpy_task
+
+    if not (ENTHALPY_DIR / "enthalpy_formation.json").exists():
+        pytest.skip("enthalpy json not downloaded")
+    task = load_enthalpy_task()
+    assert task.n >= 100
+    assert "e_form_mp" in task.feature_names
+    assert not task.has_staged
+
+
+def test_paired_against_crc():
+    import pandas as pd
+    from risktriage.sensitivity import paired_against_crc
+
+    rng = np.random.default_rng(0)
+    rows = []
+    for seed in range(12):
+        rows.append({"method": "crc", "seed": seed, "r": 0.10, "T": 0.10 + 0.01 * rng.normal()})
+        rows.append({"method": "uncertainty", "seed": seed, "r": 0.10, "T": 0.22 + 0.01 * rng.normal()})
+    out = paired_against_crc(pd.DataFrame(rows), r=0.10)
+    assert (out.competitor == "uncertainty").any()
+    assert float(out.iloc[0]["delta_mean"]) > 0
+    assert float(out.iloc[0]["wilcoxon_p"]) < 0.05
     from risktriage.data import DATA_DIR, load_her_task
 
     if not (DATA_DIR / "processed_data" / "HER_40_70_all.csv").exists():

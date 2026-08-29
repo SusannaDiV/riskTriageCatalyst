@@ -10,7 +10,7 @@ import pandas as pd
 from sklearn.model_selection import cross_val_predict
 
 from risktriage.calibration import residual_intervals
-from risktriage.data import HERTask, load_her_task
+from risktriage.data import HERTask, TriageTask, load_her_task, load_task
 from risktriage.decisions import (
     coverage_of,
     evaluate_actions,
@@ -50,9 +50,19 @@ def _y_star(y_train: np.ndarray, q: float) -> float:
     return float(np.quantile(y_train, q))
 
 
+def _prediction_folds(task: HERTask):
+    n_loco = int(pd.Series(task.loco_groups).nunique())
+    if n_loco > 40:
+        from sklearn.model_selection import GroupKFold
+
+        n_splits = min(10, n_loco)
+        return list(GroupKFold(n_splits=n_splits).split(task.X, task.y, task.loco_groups))
+    return loco_folds(task.loco_groups)
+
+
 def experiment1_prediction(task: HERTask, out: Path, smoke: bool = False) -> pd.DataFrame:
     X, y = task.X, task.y
-    folds = loco_folds(task.loco_groups)
+    folds = _prediction_folds(task)
     models = ["linear", "ridge", "rf"] if smoke else ["linear", "ridge", "rf", "lgbm"]
     rows = []
     oof = {}
@@ -469,8 +479,27 @@ def _dense_frontier_points(fitted, pred_ca, y_ca, scale_ca, seed: int, costs: Co
         ev = evaluate_actions("risktriage", bayes_action_from_p(p, costs), fitted)
         ev.update({"seed": seed, "param": float(lam)})
         rows.append(ev)
-    order = np.argsort(-fitted.pred_std)
+    p0 = gaussian_success_prob(fitted.pred_mean, scale_te, y_star)
+    ts = np.linspace(0.05, 0.45, 17 if dense else 9)
+    for t in ts:
+        a = np.full(len(p0), 1, dtype=int)
+        a[p0 < t] = 0
+        a[p0 > 1.0 - t] = 2
+        ev = evaluate_actions("selective", a, fitted)
+        ev.update({"seed": seed, "param": float(t)})
+        rows.append(ev)
     fracs = np.linspace(0.0, 1.0, 21 if dense else 9)
+    voi = voi_perfect_experiment(p0, costs)
+    order_voi = np.argsort(-voi)
+    for frac in fracs:
+        k = int(round(float(frac) * len(order_voi)))
+        a = np.where(fitted.pred_mean >= y_star, 2, 0)
+        if k > 0:
+            a[order_voi[:k]] = 1
+        ev = evaluate_actions("voi", a, fitted)
+        ev.update({"seed": seed, "param": float(frac)})
+        rows.append(ev)
+    order = np.argsort(-fitted.pred_std)
     for frac in fracs:
         k = int(round(float(frac) * len(order)))
         a = np.where(fitted.pred_mean >= y_star, 2, 0)
@@ -560,7 +589,7 @@ def experiment_matched_efficiency(
     frontier.to_csv(out / "exp3_dense_frontier.csv", index=False)
 
     t_rows, r_rows = [], []
-    methods = ["risktriage", "crc", "rac", "split_cp", "uncertainty"]
+    methods = ["risktriage", "crc", "rac", "split_cp", "uncertainty", "selective", "voi"]
     for method in methods:
         for seed, g in frontier[frontier.method == method].groupby("seed"):
             pt, rk = g["p_test"].to_numpy(), g["triage_risk"].to_numpy()
@@ -641,3 +670,53 @@ def run_all(
     experiment_matched_efficiency(task, out, n_seeds, n_members, costs, q, smoke=smoke)
     write_claims(out, exp1, exp2, exp4, exp5, exp6)
     (out / "DONE.txt").write_text("risktriage complete\n")
+
+
+def run_core(
+    task: TriageTask,
+    outdir: Path,
+    smoke: bool = False,
+    n_seeds: int | None = None,
+    costs: Costs | None = None,
+    include_staged: bool | None = None,
+    include_replay: bool = True,
+    include_selection: bool | None = None,
+) -> dict:
+    """Shared prediction + matched-risk + cost + OOD stack for HER / CO2R / enthalpy."""
+    import warnings
+
+    warnings.filterwarnings("ignore", message="X does not have valid feature names")
+    out = Path(outdir)
+    out.mkdir(parents=True, exist_ok=True)
+    costs = costs or Costs()
+    n_seeds = n_seeds if n_seeds is not None else (3 if smoke else 20)
+    n_members = 3 if smoke else 5
+    alpha = 0.1
+    r_star = 0.15 * max(costs.c_fp, costs.c_fn)
+    q = 0.75
+    include_staged = task.has_staged if include_staged is None else include_staged
+    include_selection = task.has_staged if include_selection is None else include_selection
+    (out / "task_meta.json").write_text(json.dumps(task.meta, indent=2))
+    exp1 = experiment1_prediction(task, out, smoke=smoke)
+    exp2 = experiment2_calibration(task, out, n_seeds, n_members, costs, alpha, r_star, q)
+    r_grid = np.array([0.05, 0.1, 0.15, 0.2, 0.3, 0.4]) * max(costs.c_fp, costs.c_fn)
+    if smoke:
+        r_grid = r_grid[::2]
+    alpha_grid = np.array([0.05, 0.1, 0.2, 0.3] if not smoke else [0.1, 0.2])
+    experiment3_frontier(task, out, n_seeds, n_members, costs, q, r_grid, alpha_grid)
+    exp4 = pd.DataFrame()
+    exp5 = pd.DataFrame()
+    if include_replay:
+        budgets = [5, 10, 15, 20, 25, 30, 40] if not smoke else [5, 10, 20]
+        exp4 = experiment4_replay(task, out, n_seeds, n_members, costs, alpha, r_star, q, budgets)
+    if include_staged:
+        exp5 = experiment5_staged(task, out, n_seeds, n_members, costs, alpha, r_star, q)
+    exp6 = experiment6_ood(task, out, n_seeds, n_members, costs, alpha, r_star, q)
+    if include_selection:
+        experiment_selection(task, out)
+    experiment_cost_sensitivity(task, out, n_seeds, n_members, q, r_star, smoke=smoke)
+    experiment_matched_efficiency(task, out, n_seeds, n_members, costs, q, smoke=smoke)
+    write_claims(out, exp1, exp2, exp4, exp5, exp6)
+    (out / "DONE.txt").write_text(f"{task.meta.get('task', 'task')} complete\n")
+    headline = json.loads((out / "matched_risk_headline.json").read_text())
+    return {"meta": task.meta, "exp1": exp1, "headline": headline}

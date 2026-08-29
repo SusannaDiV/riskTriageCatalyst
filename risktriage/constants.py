@@ -7,11 +7,15 @@ GITHUB_RAW = "https://raw.githubusercontent.com/facebookresearch/fairchem/main/s
 DATA_FILES = {
     "her_all": "processed_data/HER_40_70_all.csv",
     "her_matched": "processed_data/HER_40_70_matched.csv",
+    "co2r_all": "processed_data/CO2R_40_70_all.csv",
+    "co2r_matched": "processed_data/CO2R_40_70_matched.csv",
     "expt": "experimental_data/ExpDataDump_241113_clean.csv",
     "xrf": "experimental_data/XRFDataDump-241113.csv",
     "xrd": "experimental_data/XRDDataDump-241113.csv",
     "her_candidates": "computational_data/her_candidates.csv",
 }
+
+ENTHALPY_FIGSHARE = "https://ndownloader.figshare.com/files/9218491"
 
 ADSORBATES = ["H", "OH", "CO", "C", "CHO", "COCOH"]
 ENERGY_AGGS = ["mean", "wulff", "boltz"]
